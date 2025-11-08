@@ -1,80 +1,381 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hello, Deno</title>
-  <link rel="preload" href="https://demo-styles.deno.deno.net/fonts/Moranga-Regular.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="https://demo-styles.deno.deno.net/fonts/Moranga-Medium.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="https://demo-styles.deno.deno.net/fonts/Recursive_Variable.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="https://demo-styles.deno.deno.net/styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GoNow — Book Cab / Auto / Bike</title>
+  <!-- Leaflet Map CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <style>
-    img {
-      display: inline-block;
-      vertical-align: middle;
+    :root{
+      --bg:#0f172a;          /* slate-900 */
+      --panel:#0b1229;       /* deep panel */
+      --soft:#111a38;        /* soft card */
+      --text:#e5e7eb;        /* slate-200 */
+      --muted:#9aa3b2;       /* slate-400 */
+      --brand:#22c55e;       /* green-500 */
+      --brand-2:#60a5fa;     /* blue-400 */
+      --danger:#ef4444;      /* red-500 */
+      --warn:#f59e0b;        /* amber-500 */
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:18px;
     }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:var(--text);
+      background: radial-gradient(1200px 800px at 20% -20%, #1e293b 0%, var(--bg) 40%, #0b1020 100%);
+    }
+    .app{display:grid; grid-template-columns: minmax(320px,460px) 1fr; min-height:100vh}
+    .left{padding:22px; backdrop-filter:saturate(1.15);}
+    header{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px}
+    .brand{display:flex; gap:10px; align-items:center}
+    .logo{width:32px;height:32px;border-radius:10px; background:linear-gradient(135deg,var(--brand),var(--brand-2)); display:grid; place-items:center; font-weight:700;color:#04120a; box-shadow: var(--shadow)}
+    .muted{color:var(--muted); font-size:12px}
+
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03)); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .panel{padding:18px}
+
+    .tabs{display:grid; grid-template-columns: repeat(3,1fr); gap:8px; background:rgba(255,255,255,.06); padding:6px; border-radius:14px}
+    .tab{border:none; border-radius:12px; padding:10px 12px; color:var(--text); background:transparent; cursor:pointer; display:flex; gap:8px; align-items:center; justify-content:center; font-weight:600; letter-spacing:.2px}
+    .tab.active{background: #0e1736; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 8px 20px rgba(0,0,0,.25)}
+
+    .row{display:grid; grid-template-columns: 20px 1fr; gap:10px; align-items:center}
+    .pill{font-size:12px; color:#07140c; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--brand)}
+    .dot-p{width:10px;height:10px;border-radius:999px;background:var(--brand)}
+    .dot-d{width:10px;height:10px;border-radius:999px;background:var(--danger)}
+
+    .input{width:100%; background:#0b1229; border:1px solid rgba(255,255,255,.08); color:var(--text); border-radius:12px; padding:12px 14px; outline: none}
+    .input::placeholder{color:#6b7280}
+    .grid-2{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+    .btn{background:linear-gradient(135deg,var(--brand),#16a34a); color:#052012; border:none; padding:12px 14px; border-radius:12px; font-weight:800; cursor:pointer}
+    .btn.secondary{background:transparent; color:var(--text); border:1px solid rgba(255,255,255,.12)}
+    .btn:disabled{opacity:.5; cursor:not-allowed}
+
+    .metrics{display:grid; grid-template-columns: repeat(3,1fr); gap:10px; margin-top:8px}
+    .metric{background:#0b1229; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:10px 12px; text-align:center}
+    .metric .val{font-size:18px; font-weight:800}
+    .metric .lab{font-size:12px; color:var(--muted)}
+
+    .map{position:relative}
+    #map{height:100vh; width:100%;}
+
+    .drivers{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .chip{background:#0b1229; border:1px solid rgba(255,255,255,.08); color:var(--muted); padding:6px 10px; border-radius:999px; font-size:12px}
+
+    .bookings{margin-top:14px}
+    .booking{display:flex; gap:10px; padding:10px; border-radius:12px; background:#0b1229; border:1px solid rgba(255,255,255,.08)}
+    .booking .id{font-family:ui-monospace, SFMono-Regular; color:#9ca3af; font-size:12px}
+
+    .hint{font-size:12px; color:var(--muted)}
+    .stack{display:grid; gap:10px}
+    .spacer{height:6px}
+    .title{font-weight:800}
+    .small{font-size:12px}
+
+    /* Leaflet overrides for dark theme */
+    .leaflet-control-zoom a{background:#0b1229 !important; color:#e5e7eb !important; border:none !important}
+    .leaflet-control{border:none !important}
+    .leaflet-popup-content-wrapper{background:#0b1229; color:#e5e7eb; border:1px solid rgba(255,255,255,.08)}
+    .leaflet-popup-tip{background:#0b1229}
   </style>
 </head>
-
 <body>
-    <main>
-      <section>
-        <a href="https://deno.com/deploy">
-        </a>
-      <h1>
-        <p>
-          Hello, Deno!
-        </p>
-      </h1>
-      <p>
-        This little example is being served by <a href="https://deno.com/">Deno</a>.
-        You can run it locally or in porduction on <a href="https://deno.com/deploy">Deno Deploy</a> or other hosting platforms.
-      </p>
-      <ul>
-        <li>Run it locally with<code>deno task dev</code></li>
-        <li>Deploy it to <a href="https://deno.com/deploy">Deno Deploy</a> via the CLI by running<code>deno deploy</code></li>
-        <li>Run it locally and share it publically by running <code>deno deploy --connected</code></li>
-      </ul>
-    </section>
-      <hr>
-    <section>
-      <h2>What's next?</h2>
-      <p>
-        You can clone this example and deploy it to Deno Deploy in just a few clicks
-        <a href="https://app.deno.com/new?clone=https://github.com/denoland/examples&path=hello-world"><img src="https://deno.com/button" alt="Deploy on Deno"/></a>
-      </p>
-      <ul>
-        <li>
-          <a href="https://docs.deno.com/examples">More examples in the Deno Docs</a>
-        </li>
-        <li>
-          <a href="https://deno.com/deploy">Deno Deploy Early Access</a>
-        </li>
-      </ul>
-    </section>
-    </main>
-    <hr>
-    <footer>
-      <section>
-      <ul class="flex-btwn">
-        <li>
-          <a href="https://deno.com">BlueSky</a>
-        </li>
-        <li>
-          <a href="https://deno.com">Twitter</a>
-        </li>
-        <li>
-          <a href="https://deno.com">YouTube</a>
-        </li>
-        <li>
-          <a href="https://deno.com">Newsletter</a>
-        </li>
-        <li>
-          <a href="https://deno.com">Deno</a>
-        </li>
-      </ul>
-      </section>
-    </footer>
+  <div class="app">
+    <!-- LEFT PANEL -->
+    <div class="left">
+      <header>
+        <div class="brand">
+          <div class="logo">Go</div>
+          <div>
+            <div class="title">GoNow Rides</div>
+            <div class="muted">Vanilla HTML • CSS • JS</div>
+          </div>
+        </div>
+        <div class="muted">Demo Build</div>
+      </header>
+
+      <div class="card panel">
+        <div class="tabs" id="rideTabs">
+          <button class="tab active" data-type="cab">🚖 Cab</button>
+          <button class="tab" data-type="auto">🛺 Auto</button>
+          <button class="tab" data-type="bike">🏍️ Bike</button>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="stack">
+          <div class="row">
+            <div class="dot-p"></div>
+            <input id="pickup" class="input" placeholder="Pickup (search address or drop a green pin)" />
+          </div>
+          <div class="row">
+            <div class="dot-d"></div>
+            <input id="drop" class="input" placeholder="Drop (search address or drop a red pin)" />
+          </div>
+          <div class="grid-2">
+            <button id="btnLocate" class="btn secondary">📍 Locate me</button>
+            <button id="btnSwap" class="btn secondary">⇅ Swap</button>
+          </div>
+          <div class="grid-2">
+            <button id="btnSearchPickup" class="btn secondary">🔎 Set Pickup</button>
+            <button id="btnSearchDrop" class="btn secondary">🔎 Set Drop</button>
+          </div>
+
+          <div class="metrics">
+            <div class="metric"><div class="val" id="mDistance">–</div><div class="lab">Distance (km)</div></div>
+            <div class="metric"><div class="val" id="mETA">–</div><div class="lab">ETA (min)</div></div>
+            <div class="metric"><div class="val" id="mFare">–</div><div class="lab">Fare (₹)</div></div>
+          </div>
+
+          <div class="grid-2">
+            <select id="when" class="input">
+              <option value="now">Now</option>
+              <option value="later">Schedule…</option>
+            </select>
+            <input id="laterAt" type="datetime-local" class="input" style="display:none" />
+          </div>
+
+          <div class="grid-2">
+            <button id="btnQuote" class="btn">Get Fare</button>
+            <button id="btnBook" class="btn" disabled>Book Ride</button>
+          </div>
+
+          <div class="hint">Tip: Drag the <span class="pill">green</span> and <span class="pill" style="background:var(--danger); color:#140407">red</span> pins on the map, or search using the address boxes.</div>
+        </div>
+      </div>
+
+      <div class="card panel" style="margin-top:14px">
+        <div class="title">Nearby drivers</div>
+        <div id="drivers" class="drivers"></div>
+        <div class="hint small">Generated for demo around your pickup.</div>
+      </div>
+
+      <div class="card panel bookings" style="margin-top:14px">
+        <div class="title">Your recent bookings</div>
+        <div id="bookings"></div>
+      </div>
+    </div>
+
+    <!-- MAP PANEL -->
+    <div class="map">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Utilities =====
+    const $ = (q) => document.querySelector(q);
+    const km = (n) => Math.round(n * 100) / 100;
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    function haversine(a, b){
+      const R = 6371;
+      const dLat = (b.lat - a.lat) * Math.PI/180;
+      const dLng = (b.lng - a.lng) * Math.PI/180;
+      const lat1 = a.lat * Math.PI/180;
+      const lat2 = b.lat * Math.PI/180;
+      const h = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    }
+    function pricing(distanceKm, type){
+      const base = { cab: 60, auto: 40, bike: 30 }[type] || 50;
+      const perKm = { cab: 16, auto: 12, bike: 9 }[type] || 12;
+      const surge = 1.0;
+      const fare = Math.round((base + distanceKm * perKm) * surge);
+      const eta = Math.max(4, Math.round(distanceKm * 2 + 4));
+      return { fare, eta };
+    }
+
+    // ===== Map =====
+    const map = L.map('map', { zoomControl: true }).setView([19.076, 72.8777], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // custom emoji markers
+    function makeDivIcon(emoji){
+      return L.divIcon({ html:`<div style="font-size:20px">${emoji}</div>`, className:'', iconSize:[28,28], iconAnchor:[14,18]});
+    }
+    const pickupMarker = L.marker([19.076,72.8777], { draggable:true, icon: makeDivIcon('🟢') }).addTo(map).bindPopup('Pickup');
+    const dropMarker   = L.marker([19.09,72.885], { draggable:true, icon: makeDivIcon('🔴') }).addTo(map).bindPopup('Drop');
+
+    let rideType = 'cab';
+
+    function updateMetrics(){
+      const a = pickupMarker.getLatLng();
+      const b = dropMarker.getLatLng();
+      const distance = haversine({lat:a.lat,lng:a.lng},{lat:b.lat,lng:b.lng});
+      const { fare, eta } = pricing(distance, rideType);
+      $('#mDistance').textContent = isFinite(distance) ? km(distance) : '–';
+      $('#mETA').textContent = isFinite(eta) ? eta : '–';
+      $('#mFare').textContent = isFinite(fare) ? '₹'+fare : '–';
+      $('#btnBook').disabled = !isFinite(distance) || distance < 0.05;
+      renderDrivers();
+    }
+
+    pickupMarker.on('dragend', updateMetrics);
+    dropMarker.on('dragend', updateMetrics);
+
+    // Fit bounds to the two markers
+    function fitBounds(){
+      const g1 = pickupMarker.getLatLng();
+      const g2 = dropMarker.getLatLng();
+      const group = L.featureGroup([pickupMarker, dropMarker]);
+      map.fitBounds(group.getBounds().pad(0.5));
+    }
+    fitBounds();
+
+    // ===== Geolocation =====
+    $('#btnLocate').addEventListener('click', () => {
+      if (!navigator.geolocation) return alert('Geolocation not supported');
+      navigator.geolocation.getCurrentPosition(pos => {
+        const p = [pos.coords.latitude, pos.coords.longitude];
+        pickupMarker.setLatLng(p);
+        map.setView(p, 15);
+        reverseToInput('pickup', p);
+        updateMetrics();
+      }, err => alert('Location failed: '+err.message));
+    });
+
+    // ===== Ride type tabs =====
+    document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      rideType = btn.dataset.type;
+      renderDrivers();
+      updateMetrics();
+    }));
+
+    // ===== Search (Nominatim) =====
+    async function geocode(q){
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'en' }});
+      const out = await res.json();
+      return out && out[0] ? [parseFloat(out[0].lat), parseFloat(out[0].lon)] : null;
+    }
+    async function reverse(lat, lon){
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+      const r = await fetch(url); const j = await r.json();
+      return j && j.display_name ? j.display_name : `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    }
+    async function reverseToInput(which, p){
+      const name = await reverse(p[0], p[1]);
+      $('#'+which).value = name;
+    }
+
+    $('#btnSearchPickup').addEventListener('click', async () => {
+      const q = $('#pickup').value.trim(); if(!q) return;
+      const p = await geocode(q); if(!p) return alert('Pickup not found');
+      pickupMarker.setLatLng(p); map.setView(p, 15); updateMetrics();
+    });
+    $('#btnSearchDrop').addEventListener('click', async () => {
+      const q = $('#drop').value.trim(); if(!q) return;
+      const p = await geocode(q); if(!p) return alert('Drop not found');
+      dropMarker.setLatLng(p); fitBounds(); updateMetrics();
+    });
+
+    // update inputs when markers move (reverse geocode, debounced)
+    let revTimer;
+    function onDrag(e, which){
+      clearTimeout(revTimer);
+      revTimer = setTimeout(async () => {
+        const p = e.target.getLatLng();
+        const nm = await reverse(p.lat, p.lng);
+        $('#'+which).value = nm;
+      }, 400);
+    }
+    pickupMarker.on('dragend', (e)=>onDrag(e,'pickup'));
+    dropMarker.on('dragend', (e)=>onDrag(e,'drop'));
+
+    // swap
+    $('#btnSwap').addEventListener('click', ()=>{
+      const a = pickupMarker.getLatLng();
+      const b = dropMarker.getLatLng();
+      pickupMarker.setLatLng(b);
+      dropMarker.setLatLng(a);
+      const pv = $('#pickup').value; $('#pickup').value = $('#drop').value; $('#drop').value = pv;
+      fitBounds(); updateMetrics();
+    });
+
+    // schedule UI
+    $('#when').addEventListener('change', (e)=>{
+      const show = e.target.value === 'later';
+      $('#laterAt').style.display = show ? 'block' : 'none';
+    });
+
+    // quote + book (local only)
+    $('#btnQuote').addEventListener('click', updateMetrics);
+    $('#btnBook').addEventListener('click', ()=>{
+      const a = pickupMarker.getLatLng();
+      const b = dropMarker.getLatLng();
+      const distance = haversine({lat:a.lat,lng:a.lng},{lat:b.lat,lng:b.lng});
+      if (!isFinite(distance) || distance < 0.05) return alert('Please set valid pickup & drop');
+      const q = pricing(distance, rideType);
+      const booking = {
+        id: Math.random().toString(36).slice(2,10),
+        ts: new Date().toISOString(),
+        type: rideType,
+        pickup: a, drop: b, distance: km(distance), fare: q.fare, eta: q.eta,
+        when: $('#when').value,
+        at: $('#laterAt').value || null,
+      };
+      const list = JSON.parse(localStorage.getItem('gonow_bookings')||'[]');
+      list.push(booking); localStorage.setItem('gonow_bookings', JSON.stringify(list));
+      alert(`Ride booked!\nID: ${booking.id}\nETA: ${q.eta} min\nFare: ₹${q.fare}`);
+      renderBookings();
+    });
+
+    // nearby drivers (synthetic)
+    function renderDrivers(){
+      const root = $('#drivers');
+      root.innerHTML = '';
+      const a = pickupMarker.getLatLng();
+      // clear existing driver layers
+      if (window._driverLayer){ map.removeLayer(window._driverLayer); }
+      const group = L.layerGroup();
+      const icon = makeDivIcon(rideType==='cab' ? '🚖' : rideType==='auto' ? '🛺' : '🏍️');
+      const n = 6;
+      for(let i=0;i<n;i++){
+        const dlat = (Math.random()-.5)/500; // ~ few tens of meters
+        const dlng = (Math.random()-.5)/500;
+        const p = [a.lat + dlat, a.lng + dlng];
+        const m = L.marker(p,{icon}).bindPopup(`${rideType.toUpperCase()} #${i+1}`);
+        group.addLayer(m);
+        const chip = document.createElement('div'); chip.className='chip';
+        chip.textContent = `${rideType} #${i+1}`; root.appendChild(chip);
+      }
+      group.addTo(map); window._driverLayer = group;
+    }
+
+    function renderBookings(){
+      const root = $('#bookings'); root.innerHTML = '';
+      const list = (JSON.parse(localStorage.getItem('gonow_bookings')||'[]')).slice(-6).reverse();
+      if (!list.length){ root.innerHTML = '<div class="hint">No bookings yet</div>'; return; }
+      list.forEach(b=>{
+        const el = document.createElement('div'); el.className='booking';
+        el.innerHTML = `<div>
+            <div class="id">#${b.id} • ${b.type.toUpperCase()}</div>
+            <div class="small">${b.distance} km • ₹${b.fare} • ETA ${b.eta}m</div>
+            <div class="muted small">${new Date(b.ts).toLocaleString()}</div>
+          </div>`;
+        root.appendChild(el);
+      });
+    }
+
+    // init
+    (async function(){
+      // seed input names
+      $('#pickup').value = await reverse(19.076, 72.8777);
+      $('#drop').value = await reverse(19.09, 72.885);
+      renderDrivers();
+      updateMetrics();
+      renderBookings();
+    })();
+  </script>
 </body>
 </html>
